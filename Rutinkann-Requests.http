@@ -1,0 +1,36 @@
+GET localhost:8080
+Accept: application/json
+
+###
+GET localhost:8080/api/v1/activities
+Accept: application/json
+
+###
+GET localhost:8080/api/v1/activities/9
+Accept: application/json
+
+###
+POST localhost:8080/api/v1/activities
+Accept: application/json
+Content-Type: application/json
+
+{
+  "name": "jdfshjsaod",
+  "description": "dsopifho",
+  "streak_count": 10
+}
+
+###
+PUT localhost:8080/api/v1/activities/1
+Accept: application/json
+Content-Type: application/json
+
+{
+  "name": "Bismillah leetcode",
+  "description": "Belajar LeetCode setiap hari",
+  "streak_count": 1
+}
+
+###
+DELETE localhost:8080/api/v1/activities/1
+Accept: application/json
