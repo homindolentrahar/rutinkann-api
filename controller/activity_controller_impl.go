@@ -1,14 +1,15 @@
 package controller
 
 import (
-	"com.homindolentrahar.rutinkann-api/data/web"
-	"com.homindolentrahar.rutinkann-api/model"
-	"com.homindolentrahar.rutinkann-api/repository"
 	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"com.homindolentrahar.rutinkann-api/data/web"
+	"com.homindolentrahar.rutinkann-api/model"
+	"com.homindolentrahar.rutinkann-api/repository"
 
 	"com.homindolentrahar.rutinkann-api/helper"
 )
@@ -30,20 +31,35 @@ func (controller *ActivityControllerImpl) FindAll(writer http.ResponseWriter, re
 	defer helper.CommitOrRollback(tx)
 
 	var response web.BaseResponse[[]model.Activity]
-	activities, resultError := controller.Repository.FindAll(request.Context(), tx)
+	activities, resultErr := controller.Repository.FindAll(request.Context(), tx)
 
-	if resultError != nil {
-		response = web.BaseResponse[[]model.Activity]{
-			Status:  http.StatusInternalServerError,
-			Message: resultError.Error(),
-			Data:    []model.Activity{},
+	if resultErr != nil {
+		var statusCode int
+
+		switch {
+		case strings.Contains(resultErr.Error(), "404"):
+			writer.WriteHeader(404)
+			statusCode = http.StatusNotFound
+		case strings.Contains(resultErr.Error(), "500"):
+			writer.WriteHeader(500)
+			statusCode = http.StatusInternalServerError
+		default:
+			writer.WriteHeader(500)
+			statusCode = http.StatusInternalServerError
 		}
-	}
 
-	response = web.BaseResponse[[]model.Activity]{
-		Status:  http.StatusOK,
-		Message: "Success getting all activities",
-		Data:    activities,
+		response = web.BaseResponse[[]model.Activity]{
+			Status:  statusCode,
+			Message: resultErr.Error(),
+			Data:    nil,
+		}
+	} else {
+		writer.WriteHeader(http.StatusOK)
+		response = web.BaseResponse[[]model.Activity]{
+			Status:  http.StatusOK,
+			Message: "Success getting all activities",
+			Data:    activities,
+		}
 	}
 
 	encoder := json.NewEncoder(writer)
@@ -66,26 +82,31 @@ func (controller *ActivityControllerImpl) FindById(writer http.ResponseWriter, r
 	activity, resultErr := controller.Repository.FindById(request.Context(), tx, id)
 
 	if resultErr != nil {
-		if strings.Contains(resultErr.Error(), "activity not found") {
-			writer.WriteHeader(404)
+		var statusCode int
 
-			response = web.BaseResponse[*model.Activity]{
-				Status:  http.StatusNotFound,
-				Message: resultErr.Error(),
-				Data:    nil,
-			}
-		} else {
-			response = web.BaseResponse[*model.Activity]{
-				Status:  http.StatusInternalServerError,
-				Message: resultErr.Error(),
-				Data:    nil,
-			}
+		switch {
+		case strings.Contains(resultErr.Error(), "404"):
+			writer.WriteHeader(404)
+			statusCode = http.StatusNotFound
+		case strings.Contains(resultErr.Error(), "500"):
+			writer.WriteHeader(500)
+			statusCode = http.StatusInternalServerError
+		default:
+			writer.WriteHeader(500)
+			statusCode = http.StatusInternalServerError
+		}
+
+		response = web.BaseResponse[*model.Activity]{
+			Status:  statusCode,
+			Message: resultErr.Error(),
+			Data:    nil,
 		}
 	} else {
+		writer.WriteHeader(http.StatusOK)
 		response = web.BaseResponse[*model.Activity]{
 			Status:  http.StatusOK,
 			Message: "Success getting activity by id",
-			Data:    &activity,
+			Data:    activity,
 		}
 	}
 
@@ -106,21 +127,23 @@ func (controller *ActivityControllerImpl) Create(writer http.ResponseWriter, req
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
-	var response web.BaseResponse[model.Activity]
+	var response web.BaseResponse[*model.Activity]
 	activity, resultError := controller.Repository.Create(request.Context(), tx, reqBody)
 
 	if resultError != nil {
-		response = web.BaseResponse[model.Activity]{
+		writer.WriteHeader(http.StatusInternalServerError)
+		response = web.BaseResponse[*model.Activity]{
 			Status:  http.StatusInternalServerError,
 			Message: resultError.Error(),
-			Data:    model.Activity{},
+			Data:    nil,
 		}
-	}
-
-	response = web.BaseResponse[model.Activity]{
-		Status:  http.StatusCreated,
-		Message: "Success creating new activity",
-		Data:    activity,
+	} else {
+		writer.WriteHeader(http.StatusCreated)
+		response = web.BaseResponse[*model.Activity]{
+			Status:  http.StatusCreated,
+			Message: "Success creating new activity",
+			Data:    activity,
+		}
 	}
 
 	encoder := json.NewEncoder(writer)
@@ -146,21 +169,37 @@ func (controller *ActivityControllerImpl) Update(writer http.ResponseWriter, req
 	helper.PanicIfError(err)
 	defer helper.CommitOrRollback(tx)
 
-	var response web.BaseResponse[model.Activity]
+	var response web.BaseResponse[*model.Activity]
 	activity, resultErr := controller.Repository.Update(request.Context(), tx, reqBody)
 
 	if resultErr != nil {
-		response = web.BaseResponse[model.Activity]{
-			Status:  http.StatusInternalServerError,
-			Message: resultErr.Error(),
-			Data:    model.Activity{},
-		}
-	}
+		var statusCode int
 
-	response = web.BaseResponse[model.Activity]{
-		Status:  http.StatusOK,
-		Message: "Success updating activity",
-		Data:    activity,
+		switch {
+		case strings.Contains(resultErr.Error(), "404"):
+			writer.WriteHeader(404)
+			statusCode = http.StatusNotFound
+		case strings.Contains(resultErr.Error(), "500"):
+			writer.WriteHeader(500)
+			statusCode = http.StatusInternalServerError
+		default:
+			writer.WriteHeader(500)
+			statusCode = http.StatusInternalServerError
+		}
+
+		writer.WriteHeader(http.StatusInternalServerError)
+		response = web.BaseResponse[*model.Activity]{
+			Status:  statusCode,
+			Message: resultErr.Error(),
+			Data:    nil,
+		}
+	} else {
+		writer.WriteHeader(http.StatusOK)
+		response = web.BaseResponse[*model.Activity]{
+			Status:  http.StatusOK,
+			Message: "Success updating activity",
+			Data:    activity,
+		}
 	}
 
 	encoder := json.NewEncoder(writer)
@@ -183,16 +222,29 @@ func (controller *ActivityControllerImpl) Delete(writer http.ResponseWriter, req
 	resultErr := controller.Repository.Delete(request.Context(), tx, id)
 
 	if resultErr != nil {
+		var statusCode int
+
+		switch {
+		case strings.Contains(resultErr.Error(), "404"):
+			writer.WriteHeader(404)
+			statusCode = http.StatusNotFound
+		case strings.Contains(resultErr.Error(), "500"):
+			writer.WriteHeader(500)
+			statusCode = http.StatusInternalServerError
+		default:
+			writer.WriteHeader(500)
+			statusCode = http.StatusInternalServerError
+		}
+
 		response = web.BaseResponse[interface{}]{
-			Status:  http.StatusInternalServerError,
+			Status:  statusCode,
 			Message: resultErr.Error(),
-			Data:    nil,
 		}
 	} else {
+		writer.WriteHeader(http.StatusOK)
 		response = web.BaseResponse[interface{}]{
 			Status:  http.StatusOK,
 			Message: "Success deleting activity",
-			Data:    nil,
 		}
 	}
 
