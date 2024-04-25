@@ -1,37 +1,34 @@
 package controller
 
 import (
-	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"com.homindolentrahar.rutinkann-api/data/web"
 	"com.homindolentrahar.rutinkann-api/model"
 	"com.homindolentrahar.rutinkann-api/repository"
+	"com.homindolentrahar.rutinkann-api/web"
+	"gorm.io/gorm"
 
 	"com.homindolentrahar.rutinkann-api/helper"
 )
 
 type ActivityControllerImpl struct {
 	Repository repository.ActivityRepository
-	Database   *sql.DB
+	Database   *gorm.DB
 }
 
-func NewActivityController(repository repository.ActivityRepository, database *sql.DB) *ActivityControllerImpl {
+func NewActivityController(repository repository.ActivityRepository, database *gorm.DB) *ActivityControllerImpl {
 	return &ActivityControllerImpl{Repository: repository, Database: database}
 }
 
 func (controller *ActivityControllerImpl) FindAll(writer http.ResponseWriter, request *http.Request) {
-	writer.Header().Add("Content-Type", "application/json")
-
-	tx, err := controller.Database.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
+	db := controller.Database.WithContext(request.Context())
+	helper.PanicIfError(db.Error)
 
 	var response web.BaseResponse[[]model.Activity]
-	activities, resultErr := controller.Repository.FindAll(request.Context(), tx)
+	activities, resultErr := controller.Repository.FindAll(db)
 
 	if resultErr != nil {
 		var statusCode int
@@ -68,29 +65,23 @@ func (controller *ActivityControllerImpl) FindAll(writer http.ResponseWriter, re
 }
 
 func (controller *ActivityControllerImpl) FindById(writer http.ResponseWriter, request *http.Request) {
-	writer.Header().Add("Content-Type", "application/json")
-
 	pathId := request.PathValue("id")
 	id, err := strconv.Atoi(pathId)
 	helper.PanicIfError(err)
 
-	tx, txErr := controller.Database.Begin()
-	helper.PanicIfError(txErr)
-	defer helper.CommitOrRollback(tx)
+	db := controller.Database.WithContext(request.Context())
+	helper.PanicIfError(db.Error)
 
 	var response web.BaseResponse[*model.Activity]
-	activity, resultErr := controller.Repository.FindById(request.Context(), tx, id)
+	activity, resultErr := controller.Repository.FindById(db, id)
 
 	if resultErr != nil {
 		var statusCode int
 
 		switch {
-		case strings.Contains(resultErr.Error(), "404"):
+		case strings.Contains(resultErr.Error(), "not found"):
 			writer.WriteHeader(404)
 			statusCode = http.StatusNotFound
-		case strings.Contains(resultErr.Error(), "500"):
-			writer.WriteHeader(500)
-			statusCode = http.StatusInternalServerError
 		default:
 			writer.WriteHeader(500)
 			statusCode = http.StatusInternalServerError
@@ -116,19 +107,17 @@ func (controller *ActivityControllerImpl) FindById(writer http.ResponseWriter, r
 }
 
 func (controller *ActivityControllerImpl) Create(writer http.ResponseWriter, request *http.Request) {
-	writer.Header().Add("Content-Type", "application/json")
 
 	var reqBody model.Activity
 	decoder := json.NewDecoder(request.Body)
 	decodeErr := decoder.Decode(&reqBody)
 	helper.PanicIfError(decodeErr)
 
-	tx, err := controller.Database.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
+	database := controller.Database.WithContext(request.Context())
+	helper.PanicIfError(database.Error)
 
 	var response web.BaseResponse[*model.Activity]
-	activity, resultError := controller.Repository.Create(request.Context(), tx, reqBody)
+	activity, resultError := controller.Repository.Create(database, reqBody)
 
 	if resultError != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
@@ -163,14 +152,13 @@ func (controller *ActivityControllerImpl) Update(writer http.ResponseWriter, req
 	decodeErr := decoder.Decode(&reqBody)
 	helper.PanicIfError(decodeErr)
 
-	reqBody.Id = id
+	reqBody.ID = id
 
-	tx, err := controller.Database.Begin()
-	helper.PanicIfError(err)
-	defer helper.CommitOrRollback(tx)
+	database := controller.Database.WithContext(request.Context())
+	helper.PanicIfError(database.Error)
 
-	var response web.BaseResponse[*model.Activity]
-	activity, resultErr := controller.Repository.Update(request.Context(), tx, reqBody)
+	var response web.BaseResponse[[]model.Activity]
+	activity, resultErr := controller.Repository.Update(database, reqBody)
 
 	if resultErr != nil {
 		var statusCode int
@@ -188,14 +176,14 @@ func (controller *ActivityControllerImpl) Update(writer http.ResponseWriter, req
 		}
 
 		writer.WriteHeader(http.StatusInternalServerError)
-		response = web.BaseResponse[*model.Activity]{
+		response = web.BaseResponse[[]model.Activity]{
 			Status:  statusCode,
 			Message: resultErr.Error(),
 			Data:    nil,
 		}
 	} else {
 		writer.WriteHeader(http.StatusOK)
-		response = web.BaseResponse[*model.Activity]{
+		response = web.BaseResponse[[]model.Activity]{
 			Status:  http.StatusOK,
 			Message: "Success updating activity",
 			Data:    activity,
@@ -214,12 +202,11 @@ func (controller *ActivityControllerImpl) Delete(writer http.ResponseWriter, req
 	id, convertIdErr := strconv.Atoi(pathId)
 	helper.PanicIfError(convertIdErr)
 
-	tx, txErr := controller.Database.Begin()
-	helper.PanicIfError(txErr)
-	defer helper.CommitOrRollback(tx)
+	database := controller.Database.WithContext(request.Context())
+	helper.PanicIfError(database.Error)
 
 	var response web.BaseResponse[interface{}]
-	resultErr := controller.Repository.Delete(request.Context(), tx, id)
+	resultErr := controller.Repository.Delete(database, id)
 
 	if resultErr != nil {
 		var statusCode int

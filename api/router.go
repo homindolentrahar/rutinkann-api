@@ -1,17 +1,18 @@
 package api
 
 import (
+	"encoding/json"
+	"net/http"
+
 	"com.homindolentrahar.rutinkann-api/controller"
-	"com.homindolentrahar.rutinkann-api/data/web"
 	"com.homindolentrahar.rutinkann-api/model"
 	"com.homindolentrahar.rutinkann-api/repository"
-	"database/sql"
-	"encoding/json"
+	"com.homindolentrahar.rutinkann-api/web"
 	"github.com/go-chi/chi/v5"
-	"net/http"
+	"gorm.io/gorm"
 )
 
-func ActivityRoute(router *chi.Mux, db *sql.DB) {
+func ActivityRoute(router *chi.Mux, db *gorm.DB) {
 	activityRepository := repository.NewActivityRepository()
 	activityController := controller.NewActivityController(activityRepository, db)
 

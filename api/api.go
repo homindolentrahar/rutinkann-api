@@ -1,12 +1,13 @@
 package api
 
 import (
-	"database/sql"
 	"fmt"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"net/http"
 	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"gorm.io/gorm"
 )
 
 type RestApiService interface {
@@ -15,10 +16,10 @@ type RestApiService interface {
 
 type ChiApiService struct {
 	Address  string
-	Database *sql.DB
+	Database *gorm.DB
 }
 
-func NewChiApiService(address string, database *sql.DB) *ChiApiService {
+func NewChiApiService(address string, database *gorm.DB) *ChiApiService {
 	return &ChiApiService{
 		Address:  address,
 		Database: database,
@@ -30,6 +31,7 @@ func (chiApiService *ChiApiService) StartServer() error {
 
 	router.Use(middleware.Logger)
 	router.Use(middleware.Timeout(60 * time.Second))
+	router.Use(middleware.SetHeader("Content-Type", "application/json"))
 
 	ActivityRoute(router, chiApiService.Database)
 

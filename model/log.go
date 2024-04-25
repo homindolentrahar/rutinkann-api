@@ -2,13 +2,13 @@ package model
 
 import "time"
 
-type Activity struct {
-	ID          int       `json:"id" gorm:"primaryKey;column:id"`
-	Name        string    `json:"name" gorm:"column:name"`
+type Log struct {
+	Id          int       `json:"id" gorm:"primaryKey;column:id"`
 	Desc        string    `json:"description" gorm:"column:description"`
-	StreakCount int       `json:"streak_count" gorm:"column:streak_count"`
+	Count       int       `json:"count" gorm:"column:count"`
+	CompletedAt time.Time `json:"completed_at" gorm:"column:completed_at"`
 	CreatedAt   time.Time `json:"created_at" gorm:"column:created_at"`
 	UpdatedAt   time.Time `json:"updated_at" gorm:"column:updated_at"`
 	DeletedAt   time.Time `json:"deleted_at" gorm:"index;column:deleted_at"`
-	Logs        []Log     `json:"logs" gorm:"-:migration;foreignKey:activity_id;references:id"`
+	ActivityId  int       `json:"activity_id" gorm:"column:activity_id"`
 }
