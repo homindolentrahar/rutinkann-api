@@ -1,13 +1,18 @@
 package web
 
-type BaseResponse[T interface{}] struct {
+type BaseResponse[T any] struct {
 	Status  int    `json:"status"`
 	Message string `json:"message"`
 	Data    T      `json:"data"`
 }
 
-type Meta struct {
-	CurrentPage int `json:"current_page"`
-	PerPage     int `json:"per_page"`
-	Total       int `json:"total"`
+type BasePaginationResponse[T any] struct {
+	Status    int    `json:"status"`
+	Message   string `json:"message"`
+	Data      T      `json:"data"`
+	Sort      string `json:"sort,omitempty"`
+	Page      int    `json:"page,omitempty"`
+	PageSize  int    `json:"page_size,omitempty"`
+	Total     int64  `json:"total"`
+	TotalPage int    `json:"total_page"`
 }

@@ -6,6 +6,7 @@ import (
 	"com.homindolentrahar.rutinkann-api/repository"
 	"encoding/json"
 	"gorm.io/gorm"
+	"math"
 	"net/http"
 	"strconv"
 )
@@ -23,11 +24,20 @@ func NewLogController(repository repository.LogRepository, database *gorm.DB) *L
 }
 
 func (controller *LogControllerImpl) FindAll(writer http.ResponseWriter, request *http.Request) {
-	db := controller.Database.WithContext(request.Context())
-	helper.PanicIfError(db.Error)
+	database := controller.Database.WithContext(request.Context())
+	helper.PanicIfError(database.Error)
 
-	logs, resultErr := controller.Repository.FindAll(db)
-	response := helper.HandleErrorBaseResponse[[]model.Log](writer, http.StatusOK, &logs, resultErr, "Success getting all logs")
+	pagination := helper.ParsePaginationFromRequest(request)
+	logs, count, resultErr := controller.Repository.FindAll(database, pagination)
+	response := helper.HandleErrorBasePaginationResponse[[]model.Log](writer, &logs, resultErr, helper.BasePaginationResponseConf{
+		SuccessStatusCode: http.StatusOK,
+		SuccessMessage:    "Success getting all logs",
+		Sort:              pagination.Sort,
+		Page:              pagination.Page,
+		PageSize:          pagination.PageSize,
+		Total:             count,
+		TotalPage:         int(math.Ceil(float64(count) / float64(pagination.PageSize))),
+	})
 
 	encoder := json.NewEncoder(writer)
 	encodeErr := encoder.Encode(response)
@@ -43,7 +53,10 @@ func (controller *LogControllerImpl) FindById(writer http.ResponseWriter, reques
 	helper.PanicIfError(db.Error)
 
 	log, resultErr := controller.Repository.FindById(db, id)
-	response := helper.HandleErrorBaseResponse[model.Log](writer, http.StatusOK, log, resultErr, "Success getting log by ID")
+	response := helper.HandleErrorBaseResponse[model.Log](writer, log, resultErr, helper.BaseResponseConf{
+		SuccessStatusCode: http.StatusOK,
+		SuccessMessage:    "Success getting log by ID",
+	})
 
 	encoder := json.NewEncoder(writer)
 	encodeErr := encoder.Encode(response)
@@ -60,7 +73,10 @@ func (controller *LogControllerImpl) Create(writer http.ResponseWriter, request 
 	helper.PanicIfError(db.Error)
 
 	result, err := controller.Repository.Create(db, reqBody)
-	response := helper.HandleErrorBaseResponse[model.Log](writer, http.StatusCreated, result, err, "Success creating log")
+	response := helper.HandleErrorBaseResponse[model.Log](writer, result, err, helper.BaseResponseConf{
+		SuccessStatusCode: http.StatusCreated,
+		SuccessMessage:    "Success creating log",
+	})
 
 	encoder := json.NewEncoder(writer)
 	encodeErr := encoder.Encode(response)
@@ -83,7 +99,10 @@ func (controller *LogControllerImpl) Update(writer http.ResponseWriter, request 
 	helper.PanicIfError(db.Error)
 
 	result, err := controller.Repository.Update(db, reqBody)
-	response := helper.HandleErrorBaseResponse[[]model.Log](writer, http.StatusOK, &result, err, "Success updating log")
+	response := helper.HandleErrorBaseResponse[[]model.Log](writer, &result, err, helper.BaseResponseConf{
+		SuccessStatusCode: http.StatusOK,
+		SuccessMessage:    "Success updating log",
+	})
 
 	encoder := json.NewEncoder(writer)
 	encodeErr := encoder.Encode(response)
@@ -99,7 +118,10 @@ func (controller *LogControllerImpl) Delete(writer http.ResponseWriter, request 
 	helper.PanicIfError(db.Error)
 
 	err := controller.Repository.Delete(db, id)
-	response := helper.HandleErrorBaseResponse[any](writer, http.StatusOK, nil, err, "Success deleting log")
+	response := helper.HandleErrorBaseResponse[any](writer, nil, err, helper.BaseResponseConf{
+		SuccessStatusCode: http.StatusOK,
+		SuccessMessage:    "Success deleting log",
+	})
 
 	encoder := json.NewEncoder(writer)
 	encodeErr := encoder.Encode(response)

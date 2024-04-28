@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"com.homindolentrahar.rutinkann-api/db"
 	"com.homindolentrahar.rutinkann-api/model"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -12,15 +13,17 @@ func NewLogRepository() *LogRepositoryImpl {
 	return &LogRepositoryImpl{}
 }
 
-func (repo *LogRepositoryImpl) FindAll(database *gorm.DB) ([]model.Log, error) {
+func (repo *LogRepositoryImpl) FindAll(database *gorm.DB, pagination *db.Pagination) ([]model.Log, int64, error) {
 	var logs []model.Log
+	var count int64
 
-	err := database.Order("created_at desc").Find(&logs).Error
+	err := database.Scopes(db.Paginate(pagination)).Find(&logs).Error
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
+	database.Model(&model.Log{}).Count(&count)
 
-	return logs, nil
+	return logs, count, nil
 }
 
 func (repo *LogRepositoryImpl) FindById(database *gorm.DB, id int) (*model.Log, error) {

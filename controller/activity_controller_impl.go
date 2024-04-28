@@ -5,6 +5,7 @@ import (
 	"com.homindolentrahar.rutinkann-api/repository"
 	"encoding/json"
 	"gorm.io/gorm"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -27,8 +28,17 @@ func (controller *ActivityControllerImpl) FindAll(writer http.ResponseWriter, re
 	db := controller.Database.WithContext(request.Context())
 	helper.PanicIfError(db.Error)
 
-	activities, resultErr := controller.Repository.FindAll(db)
-	response := helper.HandleErrorBaseResponse(writer, http.StatusOK, &activities, resultErr, "Success getting all activities")
+	pagination := helper.ParsePaginationFromRequest(request)
+	activities, count, resultErr := controller.Repository.FindAll(db, pagination)
+	response := helper.HandleErrorBasePaginationResponse(writer, &activities, resultErr, helper.BasePaginationResponseConf{
+		SuccessStatusCode: http.StatusOK,
+		SuccessMessage:    "Success getting all activities",
+		Sort:              pagination.Sort,
+		Page:              pagination.Page,
+		PageSize:          pagination.PageSize,
+		Total:             count,
+		TotalPage:         int(math.Ceil(float64(count) / float64(pagination.PageSize))),
+	})
 
 	encoder := json.NewEncoder(writer)
 	encodeErr := encoder.Encode(response)
@@ -44,7 +54,10 @@ func (controller *ActivityControllerImpl) FindById(writer http.ResponseWriter, r
 	helper.PanicIfError(db.Error)
 
 	activity, resultErr := controller.Repository.FindById(db, id)
-	response := helper.HandleErrorBaseResponse(writer, http.StatusOK, activity, resultErr, "Success getting activity by ID")
+	response := helper.HandleErrorBaseResponse(writer, activity, resultErr, helper.BaseResponseConf{
+		SuccessStatusCode: http.StatusOK,
+		SuccessMessage:    "Success getting activity by ID",
+	})
 
 	encoder := json.NewEncoder(writer)
 	encodeErr := encoder.Encode(response)
@@ -61,7 +74,10 @@ func (controller *ActivityControllerImpl) Create(writer http.ResponseWriter, req
 	helper.PanicIfError(database.Error)
 
 	activity, resultError := controller.Repository.Create(database, reqBody)
-	response := helper.HandleErrorBaseResponse(writer, http.StatusCreated, &activity, resultError, "Success creating activity")
+	response := helper.HandleErrorBaseResponse(writer, &activity, resultError, helper.BaseResponseConf{
+		SuccessStatusCode: http.StatusCreated,
+		SuccessMessage:    "Success creating activity",
+	})
 
 	encoder := json.NewEncoder(writer)
 	encodeErr := encoder.Encode(response)
@@ -84,7 +100,10 @@ func (controller *ActivityControllerImpl) Update(writer http.ResponseWriter, req
 	helper.PanicIfError(database.Error)
 
 	activity, resultErr := controller.Repository.Update(database, reqBody)
-	response := helper.HandleErrorBaseResponse(writer, http.StatusOK, &activity, resultErr, "Success updating activity")
+	response := helper.HandleErrorBaseResponse(writer, &activity, resultErr, helper.BaseResponseConf{
+		SuccessStatusCode: http.StatusOK,
+		SuccessMessage:    "Success updating activity",
+	})
 
 	encoder := json.NewEncoder(writer)
 	encodeErr := encoder.Encode(response)
@@ -100,7 +119,10 @@ func (controller *ActivityControllerImpl) Delete(writer http.ResponseWriter, req
 	helper.PanicIfError(database.Error)
 
 	resultErr := controller.Repository.Delete(database, id)
-	response := helper.HandleErrorBaseResponse[interface{}](writer, http.StatusOK, nil, resultErr, "Success deleting activity")
+	response := helper.HandleErrorBaseResponse[interface{}](writer, nil, resultErr, helper.BaseResponseConf{
+		SuccessStatusCode: http.StatusOK,
+		SuccessMessage:    "Success deleting activity",
+	})
 
 	encoder := json.NewEncoder(writer)
 	encodeErr := encoder.Encode(response)

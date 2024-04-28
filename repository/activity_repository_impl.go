@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"com.homindolentrahar.rutinkann-api/db"
 	"com.homindolentrahar.rutinkann-api/model"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -12,15 +13,18 @@ func NewActivityRepository() *ActivityRepositoryImpl {
 	return &ActivityRepositoryImpl{}
 }
 
-func (repo *ActivityRepositoryImpl) FindAll(database *gorm.DB) ([]model.Activity, error) {
+func (repo *ActivityRepositoryImpl) FindAll(database *gorm.DB, pagination *db.Pagination) ([]model.Activity, int64, error) {
 	var activities []model.Activity
+	var count int64
 
-	err := database.Model(&model.Activity{}).Preload("Logs").Find(&activities).Error
+	err := database.Scopes(db.Paginate(pagination)).Model(&model.Activity{}).Preload("Logs").Find(&activities).Error
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return activities, nil
+	database.Model(&model.Activity{}).Count(&count)
+
+	return activities, count, nil
 }
 
 func (repo *ActivityRepositoryImpl) FindById(database *gorm.DB, id int) (*model.Activity, error) {
