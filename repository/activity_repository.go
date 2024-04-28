@@ -1,9 +1,8 @@
 package repository
 
 import (
-	"gorm.io/gorm"
-
 	"com.homindolentrahar.rutinkann-api/model"
+	"gorm.io/gorm"
 )
 
 type ActivityRepository interface {

@@ -34,6 +34,7 @@ func (chiApiService *ChiApiService) StartServer() error {
 	router.Use(middleware.SetHeader("Content-Type", "application/json"))
 
 	ActivityRoute(router, chiApiService.Database)
+	LogRoute(router, chiApiService.Database)
 
 	err := http.ListenAndServe(":8080", router)
 	if err != nil {

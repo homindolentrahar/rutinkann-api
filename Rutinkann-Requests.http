@@ -1,12 +1,9 @@
-GET localhost:8080
-Accept: application/json
-
 ###
 GET localhost:8080/api/v1/activities
 Accept: application/json
 
 ###
-GET localhost:8080/api/v1/activities/3
+GET localhost:8080/api/v1/activities/5
 Accept: application/json
 
 ###
@@ -21,7 +18,7 @@ Content-Type: application/json
 }
 
 ###
-PUT localhost:8080/api/v1/activities/1
+PUT localhost:8080/api/v1/activities/10
 Accept: application/json
 Content-Type: application/json
 
@@ -32,5 +29,41 @@ Content-Type: application/json
 }
 
 ###
-DELETE localhost:8080/api/v1/activities/2
+DELETE localhost:8080/api/v1/activities/11
+Accept: application/json
+
+###
+GET localhost:8080/api/v1/logs
+Accept: application/json
+
+###
+GET localhost:8080/api/v1/logs/10
+Accept: application/json
+
+###
+POST localhost:8080/api/v1/logs
+Accept: application/json
+Content-Type: application/json
+
+{
+  "description": "First log",
+  "count": 1,
+  "completed_at": "2024-04-25T14:32:57.809118+07:00",
+  "activity_id": 1
+}
+
+###
+PUT localhost:8080/api/v1/logs/4
+Accept: application/json
+Content-Type: application/json
+
+{
+  "description": "Fourth log",
+  "count": 5,
+  "completed_at": "2024-04-25T14:32:57.809118+07:00",
+  "activity_id": 3
+}
+
+###
+DELETE localhost:8080/api/v1/logs/6
 Accept: application/json

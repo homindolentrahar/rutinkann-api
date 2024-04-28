@@ -2,7 +2,6 @@ package repository
 
 import (
 	"com.homindolentrahar.rutinkann-api/model"
-	"errors"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -18,7 +17,7 @@ func (repo *ActivityRepositoryImpl) FindAll(database *gorm.DB) ([]model.Activity
 
 	err := database.Model(&model.Activity{}).Preload("Logs").Find(&activities).Error
 	if err != nil {
-		return nil, errors.New("500: " + err.Error())
+		return nil, err
 	}
 
 	return activities, nil
@@ -29,7 +28,7 @@ func (repo *ActivityRepositoryImpl) FindById(database *gorm.DB, id int) (*model.
 
 	err := database.Model(&model.Activity{}).Preload("Logs").Where("activities.id = ?", id).First(&activity).Error
 	if err != nil {
-		return nil, errors.New(err.Error())
+		return nil, err
 	}
 
 	return &activity, nil
@@ -40,7 +39,7 @@ func (repo *ActivityRepositoryImpl) Create(database *gorm.DB, activity model.Act
 	result := database.Create(&activity)
 
 	if result.Error != nil {
-		return nil, errors.New(result.Error.Error())
+		return nil, result.Error
 	}
 
 	return &activity, nil
@@ -51,8 +50,12 @@ func (repo *ActivityRepositoryImpl) Update(database *gorm.DB, activity model.Act
 
 	result := database.Model(&activities).Clauses(clause.Returning{}).Where("id = ?", activity.ID).Updates(&activity)
 
+	if result.RowsAffected <= 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+
 	if result.Error != nil {
-		return nil, errors.New(result.Error.Error())
+		return nil, result.Error
 	}
 
 	return activities, nil
@@ -61,8 +64,12 @@ func (repo *ActivityRepositoryImpl) Update(database *gorm.DB, activity model.Act
 func (repo *ActivityRepositoryImpl) Delete(database *gorm.DB, id int) error {
 	result := database.Delete(&model.Activity{}, id)
 
+	if result.RowsAffected <= 0 {
+		return gorm.ErrRecordNotFound
+	}
+
 	if result.Error != nil {
-		return errors.New(result.Error.Error())
+		return result.Error
 	}
 
 	return nil
