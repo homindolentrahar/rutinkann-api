@@ -2,6 +2,8 @@ package db
 
 import (
 	"com.homindolentrahar.rutinkann-api/model"
+	"fmt"
+	"os"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -19,8 +21,14 @@ type PostgresStorage struct {
 }
 
 func NewPostgresStorage() *PostgresStorage {
+	dbUser := os.Getenv("DATABASE_USER")
+	dbPassword := os.Getenv("DATABASE_PASSWORD")
+	dbHost := os.Getenv("DATABASE_HOST")
+
+	connection := fmt.Sprintf("postgres://%s:%s@%s/?sslmode=disable", dbUser, dbPassword, dbHost)
+
 	return &PostgresStorage{
-		Connection: "postgres://postgres:root@localhost/rutinkann?sslmode=disable",
+		Connection: connection,
 		Driver:     "postgres",
 	}
 }
@@ -37,7 +45,7 @@ func (ps *PostgresStorage) Connect() (*gorm.DB, error) {
 	sqlDB.SetConnMaxLifetime(time.Hour)
 	sqlDB.SetConnMaxIdleTime(10 * time.Minute)
 
-	migrateErr := db.AutoMigrate(&model.Activity{}, &model.Log{})
+	migrateErr := db.AutoMigrate(&model.Activity{}, &model.Log{}, &model.User{})
 	if migrateErr != nil {
 		return nil, migrateErr
 	}

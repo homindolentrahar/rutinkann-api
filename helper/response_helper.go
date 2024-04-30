@@ -1,10 +1,11 @@
 package helper
 
 import (
-	"com.homindolentrahar.rutinkann-api/web"
 	"errors"
-	"gorm.io/gorm"
 	"net/http"
+
+	"com.homindolentrahar.rutinkann-api/web"
+	"gorm.io/gorm"
 )
 
 type BaseResponseConf struct {
@@ -95,6 +96,40 @@ func HandleErrorBaseResponse[T any](writer http.ResponseWriter, data *T, err err
 	} else {
 		writer.WriteHeader(conf.SuccessStatusCode)
 		return web.BaseResponse[*T]{
+			Status:  conf.SuccessStatusCode,
+			Message: conf.SuccessMessage,
+			Data:    data,
+		}
+	}
+}
+
+func HandleBaseAuthResponse(writer http.ResponseWriter, data *web.AuthResponse, err error, conf BaseResponseConf) web.BaseAuthResponse {
+	if err != nil {
+		var statusCode int
+		var message string
+
+		switch {
+		case errors.Is(err, gorm.ErrRecordNotFound):
+			statusCode = http.StatusNotFound
+		default:
+			statusCode = http.StatusInternalServerError
+		}
+
+		if conf.ErrorMessage == "" {
+			message = err.Error()
+		} else {
+			message = conf.ErrorMessage
+		}
+
+		writer.WriteHeader(statusCode)
+		return web.BaseAuthResponse{
+			Status:  statusCode,
+			Message: message,
+			Data:    nil,
+		}
+	} else {
+		writer.WriteHeader(conf.SuccessStatusCode)
+		return web.BaseAuthResponse{
 			Status:  conf.SuccessStatusCode,
 			Message: conf.SuccessMessage,
 			Data:    data,
