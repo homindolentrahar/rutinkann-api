@@ -1,16 +1,13 @@
 package repository
 
 import (
-	"fmt"
+	"errors"
 	"os"
-	"strconv"
-	"time"
 
 	"com.homindolentrahar.rutinkann-api/helper"
 	"com.homindolentrahar.rutinkann-api/model"
 	"com.homindolentrahar.rutinkann-api/web"
 	"github.com/go-playground/validator/v10"
-	"github.com/golang-jwt/jwt/v5"
 	"gorm.io/gorm"
 )
 
@@ -28,13 +25,23 @@ func (a AuthRepositoryImpl) SignIn(database *gorm.DB, request *web.SignInRequest
 	var user model.User
 
 	err := database.Where("email = ?", request.Email).First(&user).Error
-	if err != nil || (user.Email != request.Email || helper.CompareEncryptedValue(request.Password, user.Password)) {
+	compareErr := helper.CompareEncryptedValue(request.Password, user.Password)
+
+	if err != nil {
 		return nil, "", err
 	}
 
+	if user.Email != request.Email || compareErr != nil {
+		return nil, "", errors.New("invalid credential")
+	}
+
 	var secretKey = []byte(os.Getenv("APP_SECRET_KEY"))
-	userClaim := model.UserClaim{}
-	token, tokenErr := createToken(string(secretKey), &userClaim)
+	userClaim := model.UserClaim{
+		ID:       user.ID,
+		Username: user.Username,
+		Email:    user.Email,
+	}
+	token, tokenErr := helper.CreateToken(string(secretKey), &userClaim)
 	if tokenErr != nil {
 		return nil, "", tokenErr
 	}
@@ -59,7 +66,7 @@ func (a AuthRepositoryImpl) Register(database *gorm.DB, request *web.RegisterReq
 	if hashedErr != nil {
 		return nil, "", hashedErr
 	}
-	user.Password = fmt.Sprintf("%x", hashedPass[:])
+	user.Password = hashedPass
 
 	result := database.Create(&user)
 	if result.Error != nil {
@@ -73,23 +80,10 @@ func (a AuthRepositoryImpl) Register(database *gorm.DB, request *web.RegisterReq
 	}
 
 	secretKey := os.Getenv("APP_SECRET_KEY")
-	token, tokenErr := createToken(secretKey, &claim)
+	token, tokenErr := helper.CreateToken(secretKey, &claim)
 	if tokenErr != nil {
 		return nil, "", tokenErr
 	}
 
 	return &user, token, nil
-}
-
-func createToken(secretKey string, userClaim *model.UserClaim) (string, error) {
-	expiredTime := time.Now().Add(2 * time.Minute)
-	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
-		ID:        strconv.Itoa(userClaim.ID),
-		Issuer:    os.Getenv("APP_NAME"),
-		Subject:   userClaim.Username,
-		ExpiresAt: jwt.NewNumericDate(expiredTime),
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
-	})
-
-	return claims.SignedString([]byte(secretKey))
 }

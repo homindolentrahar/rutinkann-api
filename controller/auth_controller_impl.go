@@ -20,8 +20,27 @@ func NewAuthControllerImpl(repository repository.AuthRepository, database *gorm.
 }
 
 func (a AuthControllerImpl) SignIn(writer http.ResponseWriter, request *http.Request) {
-	//TODO implement me
-	panic("implement me")
+	var reqBody web.SignInRequest
+	decoder := json.NewDecoder(request.Body)
+	decodeErr := decoder.Decode(&reqBody)
+	helper.PanicIfError(decodeErr)
+
+	database := a.Database.WithContext(request.Context())
+	helper.PanicIfError(database.Error)
+
+	user, token, err := a.Repository.SignIn(database, &reqBody)
+	authResponse := web.AuthResponse{
+		User:  user,
+		Token: token,
+	}
+	response := helper.HandleBaseAuthResponse(writer, &authResponse, err, helper.BaseResponseConf{
+		SuccessStatusCode: http.StatusOK,
+		SuccessMessage:    "Success signing user in",
+	})
+
+	encoder := json.NewEncoder(writer)
+	encodeErr := encoder.Encode(response)
+	helper.PanicIfError(encodeErr)
 }
 
 func (a AuthControllerImpl) Register(writer http.ResponseWriter, request *http.Request) {

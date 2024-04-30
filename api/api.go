@@ -3,10 +3,14 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"com.homindolentrahar.rutinkann-api/controller"
+	"com.homindolentrahar.rutinkann-api/helper"
 	"com.homindolentrahar.rutinkann-api/repository"
 	"github.com/go-playground/validator/v10"
 
@@ -19,7 +23,7 @@ func JWTAuthMiddleware() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			encoder := json.NewEncoder(w)
-			if r.Header.Get("Authorization") == "" {
+			if r.Header.Get("Authorization") == "" || !strings.Contains(r.Header.Get("Authorization"), "Bearer") {
 				w.WriteHeader(http.StatusUnauthorized)
 				response := map[string]interface{}{
 					"status":  http.StatusUnauthorized,
@@ -32,6 +36,27 @@ func JWTAuthMiddleware() func(next http.Handler) http.Handler {
 
 				return
 			}
+
+			secretKey := os.Getenv("APP_SECRET_KEY")
+			authorization := r.Header.Get("Authorization")
+			tokenString := strings.Replace(authorization, "Bearer ", "", -1)
+			token, tokenErr := helper.VerifyToken(secretKey, tokenString)
+
+			if tokenErr != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				response := map[string]interface{}{
+					"status":  http.StatusUnauthorized,
+					"message": tokenErr.Error(),
+				}
+				encodeErr := encoder.Encode(response)
+				if encodeErr != nil {
+					return
+				}
+
+				return
+			}
+
+			log.Println(token.Claims)
 
 			next.ServeHTTP(w, r)
 		}
