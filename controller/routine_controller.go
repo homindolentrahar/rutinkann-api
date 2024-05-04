@@ -4,7 +4,7 @@ import (
 	"net/http"
 )
 
-type ActivityController interface {
+type RoutineController interface {
 	FindAll(writer http.ResponseWriter, request *http.Request)
 	FindById(writer http.ResponseWriter, request *http.Request)
 	Create(writer http.ResponseWriter, request *http.Request)

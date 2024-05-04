@@ -1,10 +1,11 @@
 package db
 
 import (
-	"com.homindolentrahar.rutinkann-api/model"
 	"fmt"
 	"os"
 	"time"
+
+	"com.homindolentrahar.rutinkann-api/model"
 
 	_ "github.com/lib/pq"
 	"gorm.io/driver/postgres"
@@ -45,7 +46,7 @@ func (ps *PostgresStorage) Connect() (*gorm.DB, error) {
 	sqlDB.SetConnMaxLifetime(time.Hour)
 	sqlDB.SetConnMaxIdleTime(10 * time.Minute)
 
-	migrateErr := db.AutoMigrate(&model.Activity{}, &model.Log{}, &model.User{})
+	migrateErr := db.AutoMigrate(&model.Routine{}, &model.Log{}, &model.User{})
 	if migrateErr != nil {
 		return nil, migrateErr
 	}

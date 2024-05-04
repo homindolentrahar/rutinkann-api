@@ -100,20 +100,20 @@ func (chiApiService *ChiApiService) StartServer() error {
 		r.Group(func(r chi.Router) {
 			r.Use(JWTAuthMiddleware())
 
-			r.Route("/activities", func(r chi.Router) {
-				activityRepository := repository.NewActivityRepository()
-				activityController := controller.NewActivityController(activityRepository, chiApiService.Database)
+			r.Route("/routines", func(r chi.Router) {
+				routineRepository := repository.NewRoutineRepository(chiApiService.Database)
+				routineController := controller.NewRoutineController(routineRepository)
 
-				r.Get("/", activityController.FindAll)
-				r.Get("/{id}", activityController.FindById)
-				r.Post("/", activityController.Create)
-				r.Put("/{id}", activityController.Update)
-				r.Delete("/{id}", activityController.Delete)
+				r.Get("/", routineController.FindAll)
+				r.Get("/{id}", routineController.FindById)
+				r.Post("/", routineController.Create)
+				r.Put("/{id}", routineController.Update)
+				r.Delete("/{id}", routineController.Delete)
 			})
 
 			r.Route("/logs", func(r chi.Router) {
-				logRepository := repository.NewLogRepository()
-				logController := controller.NewLogController(logRepository, chiApiService.Database)
+				logRepository := repository.NewLogRepository(chiApiService.Database)
+				logController := controller.NewLogController(logRepository)
 
 				r.Get("/", logController.FindAll)
 				r.Get("/{id}", logController.FindById)

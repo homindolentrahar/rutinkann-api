@@ -2,7 +2,7 @@ package model
 
 import "time"
 
-type Activity struct {
+type Routine struct {
 	ID          int       `json:"id" gorm:"primaryKey;column:id"`
 	Name        string    `json:"name" gorm:"column:name"`
 	Desc        string    `json:"description" gorm:"column:description"`

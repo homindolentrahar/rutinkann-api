@@ -1,35 +1,30 @@
 package controller
 
 import (
-	"com.homindolentrahar.rutinkann-api/model"
-	"com.homindolentrahar.rutinkann-api/repository"
 	"encoding/json"
-	"gorm.io/gorm"
 	"math"
 	"net/http"
 	"strconv"
 
+	"com.homindolentrahar.rutinkann-api/model"
+	"com.homindolentrahar.rutinkann-api/repository"
+
 	"com.homindolentrahar.rutinkann-api/helper"
 )
 
-type ActivityControllerImpl struct {
-	Repository repository.ActivityRepository
-	Database   *gorm.DB
+type RoutineControllerImpl struct {
+	Repository repository.RoutineRepository
 }
 
-func NewActivityController(repository repository.ActivityRepository, database *gorm.DB) *ActivityControllerImpl {
-	return &ActivityControllerImpl{
+func NewRoutineController(repository repository.RoutineRepository) *RoutineControllerImpl {
+	return &RoutineControllerImpl{
 		Repository: repository,
-		Database:   database,
 	}
 }
 
-func (controller *ActivityControllerImpl) FindAll(writer http.ResponseWriter, request *http.Request) {
-	db := controller.Database.WithContext(request.Context())
-	helper.PanicIfError(db.Error)
-
+func (controller *RoutineControllerImpl) FindAll(writer http.ResponseWriter, request *http.Request) {
 	pagination := helper.ParsePaginationFromRequest(request)
-	activities, count, resultErr := controller.Repository.FindAll(db, pagination)
+	activities, count, resultErr := controller.Repository.FindAll(pagination)
 	response := helper.HandleErrorBasePaginationResponse(writer, &activities, resultErr, helper.BasePaginationResponseConf{
 		SuccessStatusCode: http.StatusOK,
 		SuccessMessage:    "Success getting all activities",
@@ -45,15 +40,12 @@ func (controller *ActivityControllerImpl) FindAll(writer http.ResponseWriter, re
 	helper.PanicIfError(encodeErr)
 }
 
-func (controller *ActivityControllerImpl) FindById(writer http.ResponseWriter, request *http.Request) {
+func (controller *RoutineControllerImpl) FindById(writer http.ResponseWriter, request *http.Request) {
 	pathId := request.PathValue("id")
 	id, err := strconv.Atoi(pathId)
 	helper.PanicIfError(err)
 
-	db := controller.Database.WithContext(request.Context())
-	helper.PanicIfError(db.Error)
-
-	activity, resultErr := controller.Repository.FindById(db, id)
+	activity, resultErr := controller.Repository.FindById(id)
 	response := helper.HandleErrorBaseResponse(writer, activity, resultErr, helper.BaseResponseConf{
 		SuccessStatusCode: http.StatusOK,
 		SuccessMessage:    "Success getting activity by ID",
@@ -64,16 +56,13 @@ func (controller *ActivityControllerImpl) FindById(writer http.ResponseWriter, r
 	helper.PanicIfError(encodeErr)
 }
 
-func (controller *ActivityControllerImpl) Create(writer http.ResponseWriter, request *http.Request) {
-	var reqBody model.Activity
+func (controller *RoutineControllerImpl) Create(writer http.ResponseWriter, request *http.Request) {
+	var reqBody model.Routine
 	decoder := json.NewDecoder(request.Body)
 	decodeErr := decoder.Decode(&reqBody)
 	helper.PanicIfError(decodeErr)
 
-	database := controller.Database.WithContext(request.Context())
-	helper.PanicIfError(database.Error)
-
-	activity, resultError := controller.Repository.Create(database, reqBody)
+	activity, resultError := controller.Repository.Create(reqBody)
 	response := helper.HandleErrorBaseResponse(writer, &activity, resultError, helper.BaseResponseConf{
 		SuccessStatusCode: http.StatusCreated,
 		SuccessMessage:    "Success creating activity",
@@ -84,22 +73,19 @@ func (controller *ActivityControllerImpl) Create(writer http.ResponseWriter, req
 	helper.PanicIfError(encodeErr)
 }
 
-func (controller *ActivityControllerImpl) Update(writer http.ResponseWriter, request *http.Request) {
+func (controller *RoutineControllerImpl) Update(writer http.ResponseWriter, request *http.Request) {
 	pathId := request.PathValue("id")
 	id, err := strconv.Atoi(pathId)
 	helper.PanicIfError(err)
 
-	var reqBody model.Activity
+	var reqBody model.Routine
 	decoder := json.NewDecoder(request.Body)
 	decodeErr := decoder.Decode(&reqBody)
 	helper.PanicIfError(decodeErr)
 
 	reqBody.ID = id
 
-	database := controller.Database.WithContext(request.Context())
-	helper.PanicIfError(database.Error)
-
-	activity, resultErr := controller.Repository.Update(database, reqBody)
+	activity, resultErr := controller.Repository.Update(reqBody)
 	response := helper.HandleErrorBaseResponse(writer, &activity, resultErr, helper.BaseResponseConf{
 		SuccessStatusCode: http.StatusOK,
 		SuccessMessage:    "Success updating activity",
@@ -110,15 +96,12 @@ func (controller *ActivityControllerImpl) Update(writer http.ResponseWriter, req
 	helper.PanicIfError(encodeErr)
 }
 
-func (controller *ActivityControllerImpl) Delete(writer http.ResponseWriter, request *http.Request) {
+func (controller *RoutineControllerImpl) Delete(writer http.ResponseWriter, request *http.Request) {
 	pathId := request.PathValue("id")
 	id, convertIdErr := strconv.Atoi(pathId)
 	helper.PanicIfError(convertIdErr)
 
-	database := controller.Database.WithContext(request.Context())
-	helper.PanicIfError(database.Error)
-
-	resultErr := controller.Repository.Delete(database, id)
+	resultErr := controller.Repository.Delete(id)
 	response := helper.HandleErrorBaseResponse[interface{}](writer, nil, resultErr, helper.BaseResponseConf{
 		SuccessStatusCode: http.StatusOK,
 		SuccessMessage:    "Success deleting activity",
