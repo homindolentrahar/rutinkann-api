@@ -1,10 +1,9 @@
 package main
 
 import (
-	"com.homindolentrahar.rutinkann-api/api"
-	"com.homindolentrahar.rutinkann-api/db"
+	"net/http"
+
 	"com.homindolentrahar.rutinkann-api/helper"
-	"github.com/go-playground/validator/v10"
 	"github.com/joho/godotenv"
 )
 
@@ -12,14 +11,10 @@ func main() {
 	envErr := godotenv.Load()
 	helper.PanicIfError(envErr)
 
-	validation := validator.New()
+	// servAddress := os.Getenv("SERVER_ADDRESS")
+	// servPort := os.Getenv("SERVER_PORT")
+	// address := fmt.Sprintf("%s:%s", servAddress, servPort)
 
-	postgresDb := db.NewPostgresStorage()
-	database, dbError := postgresDb.Connect()
-	helper.PanicIfError(dbError)
-
-	apiService := api.NewChiApiService("localhost:8080", database, validation)
-
-	err := apiService.StartServer()
-	helper.PanicIfError(err)
+	router := InitializeServer()
+	http.ListenAndServe(":8080", router)
 }

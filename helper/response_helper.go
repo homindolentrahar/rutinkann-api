@@ -3,6 +3,7 @@ package helper
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"com.homindolentrahar.rutinkann-api/web"
 	"gorm.io/gorm"
@@ -111,6 +112,8 @@ func HandleBaseAuthResponse(writer http.ResponseWriter, data *web.AuthResponse, 
 		switch {
 		case errors.Is(err, gorm.ErrRecordNotFound):
 			statusCode = http.StatusNotFound
+		case strings.Contains(err.Error(), "invalid credential"):
+			statusCode = http.StatusBadRequest
 		default:
 			statusCode = http.StatusInternalServerError
 		}

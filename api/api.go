@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -11,12 +10,9 @@ import (
 
 	"com.homindolentrahar.rutinkann-api/controller"
 	"com.homindolentrahar.rutinkann-api/helper"
-	"com.homindolentrahar.rutinkann-api/repository"
-	"github.com/go-playground/validator/v10"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"gorm.io/gorm"
 )
 
 func JWTAuthMiddleware() func(next http.Handler) http.Handler {
@@ -65,25 +61,7 @@ func JWTAuthMiddleware() func(next http.Handler) http.Handler {
 	}
 }
 
-type RestApiService interface {
-	StartServer() error
-}
-
-type ChiApiService struct {
-	Address  string
-	Database *gorm.DB
-	Validate *validator.Validate
-}
-
-func NewChiApiService(address string, database *gorm.DB, validate *validator.Validate) *ChiApiService {
-	return &ChiApiService{
-		Address:  address,
-		Database: database,
-		Validate: validate,
-	}
-}
-
-func (chiApiService *ChiApiService) StartServer() error {
+func CreateApiService(authController controller.AuthController, routineController controller.RoutineController, logController controller.LogController) *chi.Mux {
 	router := chi.NewRouter()
 
 	router.Use(middleware.Logger)
@@ -91,9 +69,6 @@ func (chiApiService *ChiApiService) StartServer() error {
 	router.Use(middleware.SetHeader("Content-Type", "application/json"))
 
 	router.Route("/api/v1", func(r chi.Router) {
-		authRepository := repository.NewAuthRepositoryImpl(chiApiService.Validate)
-		authController := controller.NewAuthControllerImpl(authRepository, chiApiService.Database)
-
 		r.Post("/sign-in", authController.SignIn)
 		r.Post("/register", authController.Register)
 
@@ -101,9 +76,6 @@ func (chiApiService *ChiApiService) StartServer() error {
 			r.Use(JWTAuthMiddleware())
 
 			r.Route("/routines", func(r chi.Router) {
-				routineRepository := repository.NewRoutineRepository(chiApiService.Database)
-				routineController := controller.NewRoutineController(routineRepository)
-
 				r.Get("/", routineController.FindAll)
 				r.Get("/{id}", routineController.FindById)
 				r.Post("/", routineController.Create)
@@ -112,22 +84,20 @@ func (chiApiService *ChiApiService) StartServer() error {
 			})
 
 			r.Route("/logs", func(r chi.Router) {
-				logRepository := repository.NewLogRepository(chiApiService.Database)
-				logController := controller.NewLogController(logRepository)
-
 				r.Get("/", logController.FindAll)
 				r.Get("/{id}", logController.FindById)
 				r.Post("/", logController.Create)
 				r.Put("/{id}", logController.Update)
 				r.Delete("/{id}", logController.Delete)
 			})
+
 		})
 	})
 
-	err := http.ListenAndServe(":8080", router)
-	if err != nil {
-		return fmt.Errorf("failed to start server: %w", err)
-	}
+	// err := http.ListenAndServe(address, router)
+	// if err != nil {
+	// 	return err
+	// }
 
-	return nil
+	return router
 }

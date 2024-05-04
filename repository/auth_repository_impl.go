@@ -2,7 +2,6 @@ package repository
 
 import (
 	"errors"
-	"os"
 
 	"com.homindolentrahar.rutinkann-api/helper"
 	"com.homindolentrahar.rutinkann-api/model"
@@ -35,13 +34,12 @@ func (a AuthRepositoryImpl) SignIn(database *gorm.DB, request *web.SignInRequest
 		return nil, "", errors.New("invalid credential")
 	}
 
-	var secretKey = []byte(os.Getenv("APP_SECRET_KEY"))
 	userClaim := model.UserClaim{
 		ID:       user.ID,
 		Username: user.Username,
 		Email:    user.Email,
 	}
-	token, tokenErr := helper.CreateToken(string(secretKey), &userClaim)
+	token, tokenErr := helper.CreateToken(&userClaim)
 	if tokenErr != nil {
 		return nil, "", tokenErr
 	}
@@ -79,8 +77,7 @@ func (a AuthRepositoryImpl) Register(database *gorm.DB, request *web.RegisterReq
 		Email:    user.Email,
 	}
 
-	secretKey := os.Getenv("APP_SECRET_KEY")
-	token, tokenErr := helper.CreateToken(secretKey, &claim)
+	token, tokenErr := helper.CreateToken(&claim)
 	if tokenErr != nil {
 		return nil, "", tokenErr
 	}

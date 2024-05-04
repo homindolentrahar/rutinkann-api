@@ -1,6 +1,9 @@
 package db
 
 import (
+	"net/http"
+	"strconv"
+
 	"gorm.io/gorm"
 )
 
@@ -35,5 +38,17 @@ func Paginate(pagination *Pagination) func(db *gorm.DB) *gorm.DB {
 		}
 
 		return db.Offset(offset).Limit(pagination.PageSize).Order(sort)
+	}
+}
+
+func ParsePaginationFromRequest(request *http.Request) *Pagination {
+	query := request.URL.Query()
+	page, _ := strconv.Atoi(query.Get("page"))
+	pageSize, _ := strconv.Atoi(query.Get("page_size"))
+
+	return &Pagination{
+		Page:     page,
+		PageSize: pageSize,
+		Sort:     query.Get("sort"),
 	}
 }

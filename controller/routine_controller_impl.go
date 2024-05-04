@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"com.homindolentrahar.rutinkann-api/db"
 	"com.homindolentrahar.rutinkann-api/model"
 	"com.homindolentrahar.rutinkann-api/repository"
 
@@ -23,7 +24,7 @@ func NewRoutineController(repository repository.RoutineRepository) *RoutineContr
 }
 
 func (controller *RoutineControllerImpl) FindAll(writer http.ResponseWriter, request *http.Request) {
-	pagination := helper.ParsePaginationFromRequest(request)
+	pagination := db.ParsePaginationFromRequest(request)
 	activities, count, resultErr := controller.Repository.FindAll(pagination)
 	response := helper.HandleErrorBasePaginationResponse(writer, &activities, resultErr, helper.BasePaginationResponseConf{
 		SuccessStatusCode: http.StatusOK,

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"com.homindolentrahar.rutinkann-api/db"
 	"com.homindolentrahar.rutinkann-api/helper"
 	"com.homindolentrahar.rutinkann-api/model"
 	"com.homindolentrahar.rutinkann-api/repository"
@@ -22,7 +23,7 @@ func NewLogController(repository repository.LogRepository) *LogControllerImpl {
 }
 
 func (controller *LogControllerImpl) FindAll(writer http.ResponseWriter, request *http.Request) {
-	pagination := helper.ParsePaginationFromRequest(request)
+	pagination := db.ParsePaginationFromRequest(request)
 	logs, count, resultErr := controller.Repository.FindAll(pagination)
 	response := helper.HandleErrorBasePaginationResponse[[]model.Log](writer, &logs, resultErr, helper.BasePaginationResponseConf{
 		SuccessStatusCode: http.StatusOK,

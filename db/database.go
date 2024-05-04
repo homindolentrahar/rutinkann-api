@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"com.homindolentrahar.rutinkann-api/helper"
 	"com.homindolentrahar.rutinkann-api/model"
 
 	_ "github.com/lib/pq"
@@ -12,34 +13,15 @@ import (
 	"gorm.io/gorm"
 )
 
-type Storage interface {
-	Connect() (*gorm.DB, error)
-}
-
-type PostgresStorage struct {
+type StorageConfig struct {
 	Connection string
 	Driver     string
 }
 
-func NewPostgresStorage() *PostgresStorage {
-	dbUser := os.Getenv("DATABASE_USER")
-	dbPassword := os.Getenv("DATABASE_PASSWORD")
-	dbHost := os.Getenv("DATABASE_HOST")
-
-	connection := fmt.Sprintf("postgres://%s:%s@%s/?sslmode=disable", dbUser, dbPassword, dbHost)
-
-	return &PostgresStorage{
-		Connection: connection,
-		Driver:     "postgres",
-	}
-}
-
-func (ps *PostgresStorage) Connect() (*gorm.DB, error) {
-	db, err := gorm.Open(postgres.Open(ps.Connection), &gorm.Config{})
+func ConnectStorage(config StorageConfig) *gorm.DB {
+	db, err := gorm.Open(postgres.Open(config.Connection), &gorm.Config{})
 	sqlDB, _ := db.DB()
-	if err != nil {
-		return nil, err
-	}
+	helper.PanicIfError(err)
 
 	sqlDB.SetMaxIdleConns(5)
 	sqlDB.SetMaxOpenConns(20)
@@ -47,9 +29,20 @@ func (ps *PostgresStorage) Connect() (*gorm.DB, error) {
 	sqlDB.SetConnMaxIdleTime(10 * time.Minute)
 
 	migrateErr := db.AutoMigrate(&model.Routine{}, &model.Log{}, &model.User{})
-	if migrateErr != nil {
-		return nil, migrateErr
+	helper.PanicIfError(migrateErr)
+
+	return db
+}
+
+func ConnectPostgresStorage() *gorm.DB {
+	dbUser := os.Getenv("DATABASE_USER")
+	dbPassword := os.Getenv("DATABASE_PASSWORD")
+	dbHost := os.Getenv("DATABASE_HOST")
+	connection := fmt.Sprintf("postgres://%s:%s@%s/?sslmode=disable", dbUser, dbPassword, dbHost)
+	config := StorageConfig{
+		Connection: connection,
+		Driver:     "postgres",
 	}
 
-	return db, nil
+	return ConnectStorage(config)
 }

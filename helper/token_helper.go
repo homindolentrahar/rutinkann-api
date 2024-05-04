@@ -10,9 +10,10 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func CreateToken(secretKey string, userClaim *model.UserClaim) (string, error) {
+func CreateToken(userClaim *model.UserClaim) (string, error) {
 	// Set expired token to a week
 	expiredTime := time.Now().Add(7 * (24 * time.Hour))
+	secretKey := os.Getenv("APP_SECRET_KEY")
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		ID:        strconv.Itoa(userClaim.ID),
 		Issuer:    os.Getenv("APP_NAME"),
